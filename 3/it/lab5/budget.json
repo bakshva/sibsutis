@@ -1,0 +1,16 @@
+{
+  "currencies": [],
+  "expenseTypes": [],
+  "incomeTypes": [],
+  "expenses": [],
+  "incomes": [
+    {
+      "record_Type": "income",
+      "name": "Стипендия",
+      "value": 16300,
+      "type": "учеба",
+      "date": "2024-12-01",
+      "currency": "рубли"
+    }
+  ]
+}

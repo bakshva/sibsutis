@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерфейс Бюджета</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css">
+    <script>// Класс Валюта
+        class Currency {
+            constructor(name) {
+                this.name = name;
+                this.rates = {}; // Массив дата => курс
+            }
+
+            addRate(date, rate) {
+                this.rates[date] = rate;
+            }
+
+            getRate(date) {
+                return this.rates[date];
+            }
+        }
+
+        // Класс Тип расхода/дохода
+        class Type {
+            constructor(name) {
+                this.name = name;
+            }
+        }
+
+        // Класс Расход
+        class Expense {
+            constructor(name, value, type, date, currency) {
+                this.name = name;
+                this.value = value;
+                this.type = type;
+                this.date = date;
+                this.currency = currency;
+            }
+        }
+
+        // Класс Доход
+        class Income {
+            constructor(name, value, type, date, currency) {
+                this.name = name;
+                this.value = value;
+                this.type = type;
+                this.date = date;
+                this.currency = currency;
+            }
+        }
+
+        // Класс Бюджет
+        class Budget {
+            constructor() {
+                this.currencies = [];
+                this.expenseTypes = [];
+                this.incomeTypes = [];
+                this.expenses = [];
+                this.incomes = [];
+            }
+
+            // Методы CRUD для валюты
+            addCurrency(currency) {
+                this.currencies.push(currency);
+            }
+
+            getCurrency(name) {
+                return this.currencies.find((currency) => currency.name === name);
+            }
+
+            updateCurrency(name, newCurrency) {
+                const index = this.currencies.findIndex((currency) => currency.name === name);
+                if (index !== -1) {
+                    this.currencies[index] = newCurrency;
+                }
+            }
+
+            deleteCurrency(name) {
+                this.currencies = this.currencies.filter((currency) => currency.name !== name);
+            }
+
+            // Методы CRUD для типов расходов
+            addExpenseType(type) {
+                this.expenseTypes.push(type);
+            }
+
+            getExpenseType(name) {
+                return this.expenseTypes.find((type) => type.name === name);
+            }
+
+            updateExpenseType(name, newType) {
+                const index = this.expenseTypes.findIndex((type) => type.name === name);
+                if (index !== -1) {
+                    this.expenseTypes[index] = newType;
+                }
+            }
+
+            deleteExpenseType(name) {
+                this.expenseTypes = this.expenseTypes.filter((type) => type.name !== name);
+            }
+
+            // Методы CRUD для типов доходов
+            addIncomeType(type) {
+                this.incomeTypes.push(type);
+            }
+
+            getIncomeType(name) {
+                return this.incomeTypes.find((type) => type.name === name);
+            }
+
+            updateIncomeType(name, newType) {
+                const index = this.incomeTypes.findIndex((type) => type.name === name);
+                if (index !== -1) {
+                    this.incomeTypes[index] = newType;
+                }
+            }
+
+            deleteIncomeType(name) {
+                this.incomeTypes = this.incomeTypes.filter((type) => type.name !== name);
+            }
+
+            // Методы CRUD для расходов
+            addExpense(expense) {
+                this.expenses.push(expense);
+            }
+
+            getExpenses() {
+                return this.expenses;
+            }
+
+            updateExpense(index, newExpense) {
+                if (index >= 0 && index < this.expenses.length) {
+                    this.expenses[index] = newExpense;
+                }
+            }
+
+            deleteExpense(index) {
+                this.expenses.splice(index, 1);
+            }
+
+            // Методы CRUD для доходов
+            addIncome(income) {
+                this.incomes.push(income);
+            }
+
+            getIncomes() {
+                return this.incomes;
+            }
+
+            updateIncome(index, newIncome) {
+                if (index >= 0 && index < this.incomes.length) {
+                    this.incomes[index] = newIncome;
+                }
+            }
+
+            deleteIncome(index) {
+                this.incomes.splice(index, 1);
+            }
+
+            // Метод Баланс - расчет баланса за период
+            getBalance(startDate, endDate, typeFilter = null) {
+                let incomeTotal = 0;
+                let expenseTotal = 0;
+
+                this.incomes.forEach((income) => {
+                    if (income.date >= startDate && income.date <= endDate) {
+                        let incomeValue = income.value;
+                        if (income.currency.name.toLowerCase() === 'доллар' || income.currency.name.toLowerCase() === 'usd') {
+                            incomeValue *= 100; // Преобразование доллара в рубли для итогового расчета
+                        }
+                        if (!typeFilter || income.type.name === typeFilter) {
+                            incomeTotal += incomeValue;
+                        }
+                    }
+                });
+
+                this.expenses.forEach((expense) => {
+                    if (expense.date >= startDate && expense.date <= endDate) {
+                        let expenseValue = expense.value;
+                        if (expense.currency.name.toLowerCase() === 'доллар' || expense.currency.name.toLowerCase() === 'usd') {
+                            expenseValue *= 100; // Преобразование доллара в рубли для итогового расчета
+                        }
+                        if (!typeFilter || expense.type.name === typeFilter) {
+                            expenseTotal += expenseValue;
+                        }
+                    }
+                });
+
+                return incomeTotal - expenseTotal;
+            }
+
+            // Метод Фильтр - выбор доходов/расходов за период
+            filterEntries(startDate, endDate, typeFilter = null) {
+                const filteredIncomes = this.incomes.filter(
+                    (income) =>
+                        income.date >= startDate &&
+                        income.date <= endDate &&
+                        (!typeFilter || income.type.name === typeFilter)
+                );
+
+                const filteredExpenses = this.expenses.filter(
+                    (expense) =>
+                        expense.date >= startDate &&
+                        expense.date <= endDate &&
+                        (!typeFilter || expense.type.name === typeFilter)
+                );
+
+                return { incomes: filteredIncomes, expenses: filteredExpenses };
+            }
+        }
+
+        // Связь интерфейса с логикой
+        const budget = new Budget();
+
+        // Загрузка данных из localStorage
+        function loadBudgetFromLocalStorage() {
+            const savedData = localStorage.getItem('budgetData');
+            if (savedData) {
+                const parsedData = JSON.parse(savedData);
+                Object.assign(budget, parsedData);
+
+                // Восстановление классов для каждой записи
+                budget.expenses = budget.expenses.map(exp => new Expense(exp.name, exp.value, new Type(exp.type.name), exp.date, new Currency(exp.currency.name)));
+                budget.incomes = budget.incomes.map(inc => new Income(inc.name, inc.value, new Type(inc.type.name), inc.date, new Currency(inc.currency.name)));
+            }
+        }
+
+        // Сохранение данных в localStorage
+        function saveBudgetToLocalStorage() {
+            localStorage.setItem('budgetData', JSON.stringify(budget));
+        }
+
+        function addRecord() {
+            const recordType = document.getElementById('recordType').value;
+            const recordName = document.getElementById('recordName').value;
+            let recordValue = parseFloat(document.getElementById('recordValue').value);
+            const recordTypeField = document.getElementById('recordTypeField').value;
+            const recordDate = document.getElementById('recordDate').value;
+            const recordCurrency = document.getElementById('recordCurrency').value;
+
+            let type = budget.getExpenseType(recordTypeField) || budget.getIncomeType(recordTypeField);
+            if (!type) {
+                type = new Type(recordTypeField);
+                if (recordType === 'expense') {
+                    budget.addExpenseType(type);
+                } else {
+                    budget.addIncomeType(type);
+                }
+            }
+
+            const currency = budget.getCurrency(recordCurrency) || new Currency(recordCurrency);
+            if (!budget.getCurrency(recordCurrency)) {
+                budget.addCurrency(currency);
+            }
+
+            if (recordType === 'expense') {
+                const expense = new Expense(recordName, recordValue, type, recordDate, currency);
+                budget.addExpense(expense);
+                alert('Расход успешно добавлен!');
+            } else if (recordType === 'income') {
+                const income = new Income(recordName, recordValue, type, recordDate, currency);
+                budget.addIncome(income);
+                alert('Доход успешно добавлен!');
+            }
+
+            // Сохранение в localStorage после добавления записи
+            saveBudgetToLocalStorage();
+
+            // Обновление интерфейса
+            updateLists();
+        }
+
+        function updateLists() {
+            const incomeList = document.getElementById('incomeList');
+            incomeList.innerHTML = '';
+            let totalIncome = 0;
+            budget.getIncomes().forEach((income, index) => {
+                let incomeValue = income.value;
+                const displayedValue = incomeValue;
+                if (income.currency.name.toLowerCase() === 'доллар' || income.currency.name.toLowerCase() === 'usd') {
+                    incomeValue *= 100; // Преобразование доллара в рубли для итогового расчета
+                }
+                const entry = document.createElement('div');
+                entry.classList.add('list-group-item');
+                entry.innerHTML = `<div class="d-flex w-100 justify-content-between"><h5 class="mb-1"><b>${income.name}</b></h5><small>${displayedValue} ${income.currency.name === 'рубль' ? '₽' : income.currency.name}</small></div><p class="mb-1">${income.type.name} | Дата: ${new Date(income.date).toLocaleDateString()}</p><button class="btn btn-secondary mt-2" onclick="editIncome(${index})">Редактировать</button><button class="btn btn-danger mt-2 ms-2" onclick="deleteIncome(${index})">Удалить</button>`;
+                incomeList.appendChild(entry);
+                totalIncome += incomeValue;
+            });
+            if (totalIncome > 0) {
+                const totalEntry = document.createElement('div');
+                totalEntry.classList.add('list-group-item', 'font-weight-bold');
+                totalEntry.innerHTML = `<div class="d-flex w-100 justify-content-between"><h5 class="mb-1">Итого</h5><small><b>${totalIncome} ₽</b></small></div>`;
+                incomeList.appendChild(totalEntry);
+            }
+
+            const expenseList = document.getElementById('expenseList');
+            expenseList.innerHTML = '';
+            let totalExpense = 0;
+            budget.getExpenses().forEach((expense, index) => {
+                let expenseValue = expense.value;
+                const displayedValue = expenseValue;
+                if (expense.currency.name.toLowerCase() === 'доллар' || expense.currency.name.toLowerCase() === 'usd') {
+                    expenseValue *= 100; // Преобразование доллара в рубли для итогового расчета
+                }
+                const entry = document.createElement('div');
+                entry.classList.add('list-group-item');
+                entry.innerHTML = `<div class="d-flex w-100 justify-content-between"><h5 class="mb-1"><b>${expense.name}</b></h5><small>${displayedValue} ${expense.currency.name === 'рубль' ? '₽' : expense.currency.name}</small></div><p class="mb-1">${expense.type.name} | Дата: ${new Date(expense.date).toLocaleDateString()}</p><button class="btn btn-secondary mt-2" onclick="editExpense(${index})">Редактировать</button><button class="btn btn-danger mt-2 ms-2" onclick="deleteExpense(${index})">Удалить</button>`;
+                expenseList.appendChild(entry);
+                totalExpense += expenseValue;
+            });
+            if (totalExpense > 0) {
+                const totalEntry = document.createElement('div');
+                totalEntry.classList.add('list-group-item', 'font-weight-bold');
+                totalEntry.innerHTML = `<div class="d-flex w-100 justify-content-between"><h5 class="mb-1">Итого</h5><small><b>${totalExpense} ₽</b></small></div>`;
+                expenseList.appendChild(totalEntry);
+            }
+        }
+
+        function editIncome(index) {
+            const income = budget.getIncomes()[index];
+            document.getElementById('recordType').value = 'income';
+            document.getElementById('recordName').value = income.name;
+            document.getElementById('recordValue').value = income.value;
+            document.getElementById('recordTypeField').value = income.type.name;
+            document.getElementById('recordDate').value = income.date;
+            document.getElementById('recordCurrency').value = income.currency.name;
+            budget.deleteIncome(index);
+            saveBudgetToLocalStorage();
+            showSection('addRecord');
+        }
+
+        function editExpense(index) {
+            const expense = budget.getExpenses()[index];
+            document.getElementById('recordType').value = 'expense';
+            document.getElementById('recordName').value = expense.name;
+            document.getElementById('recordValue').value = expense.value;
+            document.getElementById('recordTypeField').value = expense.type.name;
+            document.getElementById('recordDate').value = expense.date;
+            document.getElementById('recordCurrency').value = expense.currency.name;
+            budget.deleteExpense(index);
+            saveBudgetToLocalStorage();
+            showSection('addRecord');
+        }
+
+        function deleteIncome(index) {
+            if (confirm('Вы уверены, что хотите удалить этот доход?')) {
+                budget.deleteIncome(index);
+                saveBudgetToLocalStorage();
+                updateLists();
+            }
+        }
+
+        function deleteExpense(index) {
+            if (confirm('Вы уверены, что хотите удалить этот расход?')) {
+                budget.deleteExpense(index);
+                saveBudgetToLocalStorage();
+                updateLists();
+            }
+        }
+
+        // Загрузка данных при загрузке страницы
+        document.addEventListener('DOMContentLoaded', () => {
+            loadBudgetFromLocalStorage();
+            updateLists();
+        });</script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-dark sidebar">
+                <div class="position-sticky pt-3">
+                    <h2 class="text-light ms-3">Бюджет</h2>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active text-light" href="#" onclick="showSection('balance')">
+                                <span data-feather="home"></span>
+                                Баланс
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-light" href="#" onclick="showSection('incomes')">
+                                <span data-feather="file"></span>
+                                Доходы
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-light" href="#" onclick="showSection('expenses')">
+                                <span data-feather="shopping-cart"></span>
+                                Расходы
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-light" href="#" onclick="showSection('addRecord')">
+                                <span data-feather="plus-circle"></span>
+                                Настройки
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div id="balance" class="content-section">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="mt-4">Баланс</h2>
+                        <div>
+                            <select id="balancePeriod" class="form-select w-auto" onchange="updateBalanceChart()">
+                                <option value="week">Текущая неделя</option>
+                                <option value="month">Текущий месяц</option>
+                                <option value="year">Текущий год</option>
+                            </select>
+                        </div>
+                    </div>
+                    <canvas id="balanceChart"></canvas>
+                </div>
+                <div id="incomes" class="content-section d-none">
+                    <h2 class="mt-4">Доходы</h2>
+                    <div class="d-flex mb-3">
+                        <input type="date" id="incomeStartDate" class="form-control w-auto me-2"
+                            placeholder="Начало периода">
+                        <input type="date" id="incomeEndDate" class="form-control w-auto me-2"
+                            placeholder="Конец периода">
+                        <input type="text" id="incomeTypeFilter" class="form-control w-auto" placeholder="Тип дохода">
+                        <button class="btn btn-primary ms-2" onclick="filterIncomes()">Фильтровать</button>
+                    </div>
+                    <div id="incomeList" class="list-group"></div>
+                </div>
+                <div id="expenses" class="content-section d-none">
+                    <h2 class="mt-4">Расходы</h2>
+                    <div class="d-flex mb-3">
+                        <input type="date" id="expenseStartDate" class="form-control w-auto me-2"
+                            placeholder="Начало периода">
+                        <input type="date" id="expenseEndDate" class="form-control w-auto me-2"
+                            placeholder="Конец периода">
+                        <input type="text" id="expenseTypeFilter" class="form-control w-auto" placeholder="Тип расхода">
+                        <button class="btn btn-primary ms-2" onclick="filterExpenses()">Фильтровать</button>
+                    </div>
+                    <div id="expenseList" class="list-group"></div>
+                </div>
+                <div id="addRecord" class="content-section d-none">
+                    <h2 class="mt-4">Добавить запись</h2>
+                    <form id="addRecordForm">
+                        <div class="mb-3">
+                            <label for="recordType" class="form-label">Тип записи</label>
+                            <select class="form-select" id="recordType">
+                                <option value="income">Доход</option>
+                                <option value="expense">Расход</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="recordName" class="form-label">Название</label>
+                            <input type="text" class="form-control" id="recordName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="recordValue" class="form-label">Значение</label>
+                            <input type="number" class="form-control" id="recordValue" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="recordTypeField" class="form-label">Тип</label>
+                            <input type="text" class="form-control" id="recordTypeField" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="recordDate" class="form-label">Дата</label>
+                            <input type="date" class="form-control" id="recordDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="recordCurrency" class="form-label">Валюта</label>
+                            <input type="text" class="form-control" id="recordCurrency" required>
+                        </div>
+                        <button type="button" class="btn btn-success" onclick="addRecord()">Добавить</button>
+                    </form>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script>
+        let balanceChart;
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.add('d-none');
+            });
+            document.getElementById(sectionId).classList.remove('d-none');
+            if (sectionId === 'balance') {
+                updateBalanceChart();
+            }
+        }
+
+        function initializeChart() {
+            updateBalanceChart();
+        }
+
+        function updateBalanceChart() {
+            const period = document.getElementById('balancePeriod').value;
+            const ctx = document.getElementById('balanceChart').getContext('2d');
+            let labels = [];
+            let data = [];
+
+            const today = new Date();
+            let startDate, endDate;
+            let accumulatedBalance = 0;
+
+            if (period === 'week') {
+                labels = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                for (let i = 0; i < 7; i++) {
+                    const currentDate = new Date();
+                    currentDate.setDate(today.getDate() - today.getDay() + i);
+                    startDate = currentDate.toISOString().split('T')[0];
+                    endDate = currentDate.toISOString().split('T')[0];
+                    const dailyBalance = budget.getBalance(startDate, endDate);
+                    accumulatedBalance += dailyBalance;
+                    data.push(accumulatedBalance);
+                }
+            } else if (period === 'month') {
+                const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+                labels = Array.from({ length: daysInMonth }, (_, i) => `Day ${i + 1}`);
+                for (let i = 1; i <= daysInMonth; i++) {
+                    const currentDate = new Date(today.getFullYear(), today.getMonth(), i);
+                    startDate = currentDate.toISOString().split('T')[0];
+                    endDate = currentDate.toISOString().split('T')[0];
+                    const dailyBalance = budget.getBalance(startDate, endDate);
+                    accumulatedBalance += dailyBalance;
+                    data.push(accumulatedBalance);
+                }
+            } else if (period === 'year') {
+                labels = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                for (let i = 0; i < 12; i++) {
+                    startDate = new Date(today.getFullYear(), i, 1).toISOString().split('T')[0];
+                    endDate = new Date(today.getFullYear(), i + 1, 0).toISOString().split('T')[0];
+                    const monthlyBalance = budget.getBalance(startDate, endDate);
+                    accumulatedBalance += monthlyBalance;
+                    data.push(accumulatedBalance);
+                }
+            }
+
+            if (balanceChart) {
+                balanceChart.destroy();
+            }
+
+            balanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Баланс',
+                        data: data,
+                        borderColor: 'blue',
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Период'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Сумма'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeChart);
+
+        function filterIncomes() {
+            const incomeStartDate = document.getElementById('incomeStartDate')?.value;
+            const incomeEndDate = document.getElementById('incomeEndDate')?.value;
+            const incomeTypeFilter = document.getElementById('incomeTypeFilter')?.value.toLowerCase();
+            const incomeList = document.getElementById('incomeList');
+            incomeList.innerHTML = '';
+            let totalIncome = 0;
+            budget.getIncomes().forEach((income, index) => {
+                if ((incomeStartDate === '' || income.date >= incomeStartDate) &&
+                    (incomeEndDate === '' || income.date <= incomeEndDate) &&
+                    (incomeTypeFilter === '' || income.type.name.toLowerCase().includes(incomeTypeFilter))) {
+                    let incomeValue = income.value;
+                    const displayedValue = incomeValue;
+                    if (income.currency.name.toLowerCase() === 'доллар' || income.currency.name.toLowerCase() === 'usd') {
+                        incomeValue *= 100;
+                    }
+                    const entry = document.createElement('div');
+                    entry.classList.add('list-group-item');
+                    entry.innerHTML = `<div class="d-flex w-100 justify-content-between"><h5 class="mb-1"><b>${income.name}</b></h5><small>${displayedValue} ${income.currency.name === 'рубль' ? '₽' : income.currency.name}</small></div><p class="mb-1">${income.type.name} | Дата: ${new Date(income.date).toLocaleDateString()}</p><button class="btn btn-secondary mt-2" onclick="editIncome(${index})">Редактировать</button><button class="btn btn-danger mt-2 ms-2" onclick="deleteIncome(${index})">Удалить</button>`;
+                    incomeList.appendChild(entry);
+                    totalIncome += incomeValue;
+                }
+            });
+            if (totalIncome > 0) {
+                const totalEntry = document.createElement('div');
+                totalEntry.classList.add('list-group-item', 'font-weight-bold');
+                totalEntry.innerHTML = `<div class="d-flex w-100 justify-content-between"><h5 class="mb-1">Итого</h5><small><b>${totalIncome} ₽</b></small></div>`;
+                incomeList.appendChild(totalEntry);
+            }
+        }
+
+        function filterExpenses() {
+            const expenseStartDate = document.getElementById('expenseStartDate')?.value;
+            const expenseEndDate = document.getElementById('expenseEndDate')?.value;
+            const expenseTypeFilter = document.getElementById('expenseTypeFilter')?.value.toLowerCase();
+            const expenseList = document.getElementById('expenseList');
+            expenseList.innerHTML = '';
+            let totalExpense = 0;
+            budget.getExpenses().forEach((expense, index) => {
+                if ((expenseStartDate === '' || expense.date >= expenseStartDate) &&
+                    (expenseEndDate === '' || expense.date <= expenseEndDate) &&
+                    (expenseTypeFilter === '' || expense.type.name.toLowerCase().includes(expenseTypeFilter))) {
+                    let expenseValue = expense.value;
+                    const displayedValue = expenseValue;
+                    if (expense.currency.name.toLowerCase() === 'доллар' || expense.currency.name.toLowerCase() === 'usd') {
+                        expenseValue *= 100;
+                    }
+                    const entry = document.createElement('div');
+                    entry.classList.add('list-group-item');
+                    entry.innerHTML = `<div class="d-flex w-100 justify-content-between"><h5 class="mb-1"><b>${expense.name}</b></h5><small>${displayedValue} ${expense.currency.name === 'рубль' ? '₽' : expense.currency.name}</small></div><p class="mb-1">${expense.type.name} | Дата: ${new Date(expense.date).toLocaleDateString()}</p><button class="btn btn-secondary mt-2" onclick="editExpense(${index})">Редактировать</button><button class="btn btn-danger mt-2 ms-2" onclick="deleteExpense(${index})">Удалить</button>`;
+                    expenseList.appendChild(entry);
+                    totalExpense += expenseValue;
+                }
+            });
+            if (totalExpense > 0) {
+                const totalEntry = document.createElement('div');
+                totalEntry.classList.add('list-group-item', 'font-weight-bold');
+                totalEntry.innerHTML = `<div class="d-flex w-100 justify-content-between"><h5 class="mb-1">Итого</h5><small><b>${totalExpense} ₽</b></small></div>`;
+                expenseList.appendChild(totalEntry);
+            }
+        }
+        function saveRecordToServer(record) {
+            fetch('/api/budget', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(record),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message === 'Запись добавлена!') {
+                        console.log('Запись успешно сохранена на сервере');
+                        updateLists(); // Обновляем списки после успешного сохранения
+                    } else {
+                        console.error('Ошибка сервера:', data.message);
+                    }
+                })
+                .catch(error => console.error('Ошибка сети:', error));
+        }
+
+        // Исправляем метод addRecord для отправки данных на сервер
+        function addRecord() {
+            const recordType = document.getElementById('recordType').value;
+            const recordName = document.getElementById('recordName').value;
+            let recordValue = parseFloat(document.getElementById('recordValue').value);
+            const recordTypeField = document.getElementById('recordTypeField').value;
+            const recordDate = document.getElementById('recordDate').value;
+            const recordCurrency = document.getElementById('recordCurrency').value;
+
+            let type = budget.getExpenseType(recordTypeField) || budget.getIncomeType(recordTypeField);
+            if (!type) {
+                type = new Type(recordTypeField);
+                if (recordType === 'expense') {
+                    budget.addExpenseType(type);
+                } else {
+                    budget.addIncomeType(type);
+                }
+            }
+
+            const currency = budget.getCurrency(recordCurrency) || new Currency(recordCurrency);
+            if (!budget.getCurrency(recordCurrency)) {
+                budget.addCurrency(currency);
+            }
+
+            let record;
+            if (recordType === 'expense') {
+                record = {
+                    record_Type: 'expense',
+                    name: recordName,
+                    value: recordValue,
+                    type: recordTypeField,
+                    date: recordDate,
+                    currency: recordCurrency
+                };
+                budget.addExpense(new Expense(recordName, recordValue, type, recordDate, currency));
+                alert('Расход успешно добавлен!');
+            } else if (recordType === 'income') {
+                record = {
+                    record_Type: 'income',
+                    name: recordName,
+                    value: recordValue,
+                    type: recordTypeField,
+                    date: recordDate,
+                    currency: recordCurrency
+                };
+                budget.addIncome(new Income(recordName, recordValue, type, recordDate, currency));
+                alert('Доход успешно добавлен!');
+            }
+
+            // Сохраняем на сервер
+            saveRecordToServer(record);
+
+            // Сохраняем в localStorage для локального использования
+            saveBudgetToLocalStorage();
+
+            // Обновляем интерфейс
+            updateLists();
+        }
+
+    </script>
+</body>
+
+</html>
