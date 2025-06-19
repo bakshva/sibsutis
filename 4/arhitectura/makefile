@@ -1,0 +1,106 @@
+CC = gcc
+INCLUDES = -I ../include
+SRC = src
+OBJ = obj
+
+INCLUDES = ./include
+
+MAIN_CONSOLE = console.c
+MAIN_FONT = font.c
+
+CONSOLEDIR = ./console
+# Исходники
+SRCS_CONSOLE = $(filter-out $(CONSOLEDIR)/$(SRC)/$(MAIN_FONT), $(wildcard $(CONSOLEDIR)/$(SRC)/*.c))
+SRCS_FONT = $(CONSOLEDIR)/$(SRC)/$(MAIN_FONT)
+
+# Объекты
+OBJS_CONSOLE = $(SRCS_CONSOLE:$(CONSOLEDIR)/$(SRC)/%.c=$(CONSOLEDIR)/$(OBJ)/%.o)
+OBJS_FONT = $(SRCS_FONT:$(CONSOLEDIR)/$(SRC)/%.c=$(CONSOLEDIR)/$(OBJ)/%.o)
+
+# Исполняемые файлы
+CONSOLE_EXE = $(CONSOLEDIR)/console
+FONT_EXE = $(CONSOLEDIR)/font
+
+COMPUTERDIR = ./mySimpleComputer
+SRCS_COMPUTER = $(wildcard $(COMPUTERDIR)/$(SRC)/*c)
+OBJS_COMPUTER = $(SRCS_COMPUTER:$(COMPUTERDIR)/$(SRC)/%.c=$(COMPUTERDIR)/$(OBJ)/%.o)
+LIBCOMPUTER = mySimpleComputer
+LIBCOMPUTERPATH = $(COMPUTERDIR)/lib$(LIBCOMPUTER).a
+
+TERMDIR = ./myTerm
+SRCS_TERM = $(wildcard $(TERMDIR)/$(SRC)/*.c)
+OBJS_TERM = $(SRCS_TERM:$(TERMDIR)/$(SRC)/%.c=$(TERMDIR)/$(OBJ)/%.o)
+LIBTERMINC = myTerm
+LIBTERMPATH = $(TERMDIR)/lib$(LIBTERMINC).a
+
+CHARSDIR = ./myBigChars
+SRCS_CHARS = $(wildcard $(CHARSDIR)/$(SRC)/*.c)
+OBJS_CHARS = $(SRCS_CHARS:$(CHARSDIR)/$(SRC)/%.c=$(CHARSDIR)/$(OBJ)/%.o)
+LIBCHARSC = myBigChars
+LIBCHARSPATH = $(CHARSDIR)/lib$(LIBCHARSC).a
+
+KEYDIR = ./myReadKey
+SRCS_KEY = $(wildcard $(KEYDIR)/$(SRC)/*.c)
+OBJS_KEY = $(SRCS_KEY:$(KEYDIR)/$(SRC)/%.c=$(KEYDIR)/$(OBJ)/%.o)
+LIBKEYC = myReadKey
+LIBKEYPATH = $(KEYDIR)/lib$(LIBKEYC).a
+
+ASSMDIR = ./simpleassembler
+SRCS_ASSM = $(wildcard $(ASSMDIR)/$(SRC)/*.c)
+OBJS_ASSM = $(SRCS_ASSM:$(ASSMDIR)/$(SRC)/%.c=$(ASSMDIR)/$(OBJ)/%.o)
+SAT_EXE = $(ASSMDIR)/sat
+
+BASMDIR = ./simplebasic
+SRCS_BAS = $(wildcard $(BASMDIR)/$(SRC)/*.c)
+OBJS_BAS = $(SRCS_BAS:$(BASMDIR)/$(SRC)/%.c=$(BASMDIR)/$(OBJ)/%.o)
+BAS_EXE = $(BASMDIR)/sbt
+
+all: console font sat sbt
+
+console: $(OBJS_CONSOLE) $(LIBCOMPUTERPATH) $(LIBTERMPATH) $(LIBCHARSPATH) $(LIBKEYPATH)
+	$(CC) $(OBJS_CONSOLE) -L $(COMPUTERDIR) -L $(TERMDIR) -L $(CHARSDIR) -L $(KEYDIR) -l$(LIBCOMPUTER) -l$(LIBTERMINC) -l$(LIBCHARSC) -l$(LIBKEYC) -o $(CONSOLE_EXE)
+
+font: $(LIBCHARSPATH) $(OBJS_FONT)
+	$(CC) $(OBJS_FONT) -L $(CHARSDIR) -l$(LIBCHARSC) -o $(FONT_EXE)
+
+sat: $(OBJS_ASSM) $(LIBCOMPUTERPATH)
+	$(CC) $(OBJS_ASSM) -L $(COMPUTERDIR) -l$(LIBCOMPUTER) -o $(SAT_EXE)
+
+sbt: $(OBJS_BAS) $(LIBCOMPUTERPATH)
+	$(CC) $(OBJS_BAS) -L $(COMPUTERDIR) -l$(LIBCOMPUTER) -o $(BAS_EXE)
+
+$(CONSOLEDIR)/$(OBJ)/%.o: $(CONSOLEDIR)/$(SRC)/%.c
+	$(CC) -c -I $(INCLUDES) $< -o $@
+
+$(LIBCOMPUTERPATH): $(OBJS_COMPUTER)
+	ar rcs $(LIBCOMPUTERPATH) $(OBJS_COMPUTER)
+
+$(COMPUTERDIR)/$(OBJ)/%.o: $(COMPUTERDIR)/$(SRC)/%.c
+	$(CC) -c -I $(INCLUDES) $< -o $@
+
+$(LIBTERMPATH): $(OBJS_TERM)
+	ar rcs $(LIBTERMPATH) $(OBJS_TERM)
+
+$(TERMDIR)/$(OBJ)/%.o: $(TERMDIR)/$(SRC)/%.c
+	$(CC) -c -I $(INCLUDES) $< -o $@
+
+$(LIBCHARSPATH): $(OBJS_CHARS)
+	ar rcs $(LIBCHARSPATH) $(OBJS_CHARS)
+
+$(CHARSDIR)/$(OBJ)/%.o: $(CHARSDIR)/$(SRC)/%.c
+	$(CC) -c -I $(INCLUDES) $< -o $@
+
+$(LIBKEYPATH): $(OBJS_KEY)
+	ar rcs $(LIBKEYPATH) $(OBJS_KEY)
+
+$(KEYDIR)/$(OBJ)/%.o: $(KEYDIR)/$(SRC)/%.c
+	$(CC) -c -I $(INCLUDES) $< -o $@
+
+$(ASSMDIR)/$(OBJ)/%.o: $(ASSMDIR)/$(SRC)/%.c
+	$(CC) -c -I $(INCLUDES) $< -o $@
+
+$(BASMDIR)/$(OBJ)/%.o: $(BASMDIR)/$(SRC)/%.c
+	$(CC) -c -I $(INCLUDES) $< -o $@
+
+clean:
+	rm -rf $(OBJS_CONSOLE) $(OBJS_TERM) $(OBJS_COMPUTER) $(OBJS_CHARS) $(OBJS_KEY) $(OBJS_ASSM) $(OBJS_BAS) $(LIBTERMPATH) $(LIBCOMPUTERPATH) $(LIBCHARSPATH) $(LIBKEYPATH) $(CONSOLE_EXE) $(FONT_EXE) $(SAT_EXE) $(BAS_EXE)
